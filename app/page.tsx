@@ -46,10 +46,10 @@ export default function Home() {
     <main>
       <div className="card">
         <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#f0f6fc' }}>
-          Dark File Hub
+          Quick Vault
         </h1>
         <p style={{ color: '#8b949e', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-          Upload files up to 1 GB. All uploads auto-delete after 30 hours.
+          Temporary file sharing up to 1 GB. Files automatically clear after 30 hours.
         </p>
 
         <div className="upload-area">
@@ -65,20 +65,20 @@ export default function Home() {
 
       <div className="card">
         <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#f0f6fc' }}>
-          Uploaded Files
+          Shared Files
         </h2>
 
         {loading ? (
-          <p style={{ color: '#8b949e' }}>Loading files...</p>
+          <p style={{ color: '#8b949e' }}>Loading workspace...</p>
         ) : files.length === 0 ? (
-          <p style={{ color: '#8b949e' }}>No files active right now.</p>
+          <p style={{ color: '#8b949e' }}>No files currently uploaded.</p>
         ) : (
           files.map((file, idx) => (
             <div key={idx} className="file-item">
               <div>
                 <p style={{ color: '#f0f6fc', fontWeight: 500 }}>{file.pathname}</p>
                 <span style={{ color: '#8b949e', fontSize: '0.8rem' }}>
-                  {file.size} • Expires in {file.hoursLeft}h
+                  {file.size} • Available for {file.hoursLeft}h
                 </span>
               </div>
               <a href={file.url} download className="btn">
