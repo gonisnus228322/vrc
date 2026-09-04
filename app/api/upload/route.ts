@@ -10,9 +10,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file received' }, { status: 400 });
     }
 
-    // Match store setting (private) and bind token explicitly
     const blob = await put(file.name, file, {
-      access: 'private',
+      access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
