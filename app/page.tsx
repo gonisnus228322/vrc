@@ -19,7 +19,7 @@ export default function Home() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch('/api/files');
+      const res = await fetch('/api/files', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch files');
       const data = await res.json();
       setFiles(data);
