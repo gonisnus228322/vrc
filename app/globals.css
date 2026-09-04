@@ -17,7 +17,7 @@ body {
 
 .vault-container {
   width: 100%;
-  max-width: 540px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -25,10 +25,10 @@ body {
 
 .vault-card {
   background-color: #0a0a0c;
-  border: 1px solid #1d1e24;
+  border: 1px solid #1c1d22;
   border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 0 50px rgba(0, 240, 255, 0.03);
+  padding: 24px;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.03);
 }
 
 .vault-header {
@@ -53,45 +53,56 @@ body {
 }
 
 .vault-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: -0.02em;
 }
 
 .badge {
   font-family: monospace;
   font-size: 10px;
   text-transform: uppercase;
-  background: #121318;
-  border: 1px solid #272932;
+  background: #111216;
+  border: 1px solid #22242c;
   color: #8f93a3;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
 }
 
 .vault-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #6b6f80;
   margin-bottom: 20px;
 }
 
 .dropzone {
-  border: 2px dashed #23252f;
+  border: 2px dashed #20222a;
   background: #000000;
   border-radius: 12px;
-  padding: 32px 16px;
+  padding: 28px 16px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.2s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .dropzone:hover {
-  border-color: #00f0ff66;
+  border-color: #00f0ff55;
+}
+
+.icon-wrapper {
+  width: 42px;
+  height: 42px;
+  background: #111216;
+  border: 1px solid #22242c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00f0ff;
 }
 
 .file-name {
@@ -102,7 +113,7 @@ body {
 }
 
 .file-hint {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: #52525b;
 }
 
@@ -119,7 +130,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .btn-upload:hover {
@@ -132,37 +143,38 @@ body {
   cursor: not-allowed;
 }
 
-.progress-wrapper {
-  margin-top: 16px;
+.loading-container {
+  margin-top: 14px;
 }
 
-.progress-info {
-  display: flex;
-  justify-content: space-between;
+.loading-text {
+  display: block;
   font-family: monospace;
-  font-size: 0.75rem;
-  color: #a1a1aa;
+  font-size: 0.72rem;
+  color: #00f0ff;
   margin-bottom: 6px;
 }
 
-.progress-val {
-  color: #00f0ff;
-  font-weight: bold;
-}
-
-.progress-bg {
+.loading-bar {
   width: 100%;
-  height: 6px;
-  background-color: #121318;
+  height: 4px;
+  background: #111216;
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid #23252f;
 }
 
-.progress-fill {
+.loading-progress {
+  width: 100%;
   height: 100%;
-  background-color: #00f0ff;
-  transition: width 0.15s ease-out;
+  background: #00f0ff;
+  animation: pulse-loading 1.5s infinite ease-in-out;
+  transform-origin: left;
+}
+
+@keyframes pulse-loading {
+  0% { transform: scaleX(0.1); }
+  50% { transform: scaleX(0.8); }
+  100% { transform: scaleX(1); }
 }
 
 .file-list {
@@ -170,12 +182,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 12px;
 }
 
 .file-item {
   background: #000000;
-  border: 1px solid #1d1e24;
-  padding: 12px 16px;
+  border: 1px solid #1c1d22;
+  padding: 12px 14px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -216,10 +229,10 @@ body {
   font-weight: 600;
   border-radius: 8px;
   text-decoration: none;
-  border: 1px solid #23252f;
+  border: 1px solid #22242c;
   background: #0d0e12;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .btn-download {
@@ -228,7 +241,6 @@ body {
 
 .btn-download:hover {
   border-color: #00f0ff66;
-  background: rgba(0, 240, 255, 0.08);
 }
 
 .btn-delete {
@@ -237,7 +249,6 @@ body {
 
 .btn-delete:hover {
   border-color: #ff4d4d66;
-  background: rgba(255, 77, 77, 0.08);
 }
 
 .btn-action:disabled {
@@ -250,10 +261,11 @@ body {
   font-size: 0.75rem;
   color: #52525b;
   font-family: monospace;
-  padding: 28px;
+  padding: 24px;
   background: #000000;
-  border: 1px solid #1a1b20;
+  border: 1px solid #18191e;
   border-radius: 12px;
+  margin-top: 12px;
 }
 
 .error-text {
