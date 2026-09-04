@@ -14,7 +14,6 @@ interface BlobFile {
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +37,6 @@ export default function Home() {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
-      setProgress(0);
     }
   };
 
@@ -47,20 +45,15 @@ export default function Home() {
     if (!file) return;
 
     setUploading(true);
-    setProgress(0);
     setError(null);
 
     try {
       await upload(file.name, file, {
         access: 'public',
         handleUploadUrl: '/api/upload',
-        onUploadProgress: (progressEvent) => {
-          setProgress(Math.round(progressEvent.percentage));
-        },
       });
 
       setFile(null);
-      setProgress(0);
       await fetchFiles();
     } catch (err) {
       const msg = (err as Error).message || 'Upload failed';
@@ -113,14 +106,25 @@ export default function Home() {
         </div>
 
         <p className="vault-subtitle">
-          Temporary file sharing. Files automatically clear after 30 hours.
+          Temporary file vault. Direct storage with 30-hour retention.
         </p>
 
         <form onSubmit={handleUpload}>
           <label className="dropzone">
-            <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
+            <input
+              type="file"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+            <div className="icon-wrapper">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
             <span className="file-name">
-              {file ? file.name : 'Click or tap here to select a file'}
+              {file ? file.name : 'Click to select or drop a file'}
             </span>
             <span className="file-hint">
               {file ? formatSize(file.size) : 'Supports files up to 5 GB'}
@@ -128,20 +132,17 @@ export default function Home() {
           </label>
 
           {uploading && (
-            <div className="progress-wrapper">
-              <div className="progress-info">
-                <span>Uploading...</span>
-                <span className="progress-val">{progress}%</span>
-              </div>
-              <div className="progress-bg">
-                <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <div className="loading-container">
+              <span className="loading-text">Vaulting file to storage...</span>
+              <div className="loading-bar">
+                <div className="loading-progress" />
               </div>
             </div>
           )}
 
           {file && (
             <button type="submit" disabled={uploading} className="btn-upload">
-              {uploading ? 'Vaulting File...' : 'Upload File to Vault'}
+              {uploading ? 'Uploading...' : 'Upload File to Vault'}
             </button>
           )}
         </form>
@@ -149,10 +150,10 @@ export default function Home() {
         {error && <p className="error-text">{error}</p>}
       </div>
 
-      {/* Shared Files Section */}
+      {/* Shared Files List */}
       <div className="vault-card">
         <div className="vault-header">
-          <span className="badge">Shared Files</span>
+          <span className="vault-title" style={{ fontSize: '0.9rem' }}>Vault Contents</span>
           <span className="badge">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
         </div>
 
