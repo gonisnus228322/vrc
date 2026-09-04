@@ -13,6 +13,7 @@ interface BlobFile {
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +65,30 @@ export default function Home() {
     } catch (err) {
       const msg = (err as Error).message || 'Upload failed';
       setError(msg);
-      alert(`Upload failed: ${msg}`);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDelete = async (url: string) => {
+    setDeletingUrl(url);
+    try {
+      const res = await fetch('/api/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Delete failed');
+      }
+
+      await fetchFiles();
+    } catch (err) {
+      alert(`Delete failed: ${(err as Error).message}`);
+    } finally {
+      setDeletingUrl(null);
     }
   };
 
@@ -79,70 +101,92 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0b0c0e] text-zinc-200 p-6 flex flex-col items-center justify-center font-sans">
+    <main className="min-h-screen bg-[#090a0f] text-zinc-200 p-4 sm:p-8 flex flex-col items-center justify-center font-sans">
       <div className="w-full max-w-xl space-y-6">
         
         {/* Upload Card */}
-        <div className="bg-[#121418] border border-zinc-800/80 rounded-xl p-6 shadow-2xl">
-          <h1 className="text-xl font-bold text-white mb-1">Quick Vault</h1>
+        <div className="bg-[#111318] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-center space-x-2 mb-1">
+            <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse" />
+            <h1 className="text-xl font-bold text-white tracking-wide">Quick Vault</h1>
+          </div>
           <p className="text-xs text-zinc-400 mb-6">
             Temporary file sharing. Files automatically clear after 30 hours.
           </p>
 
           <form onSubmit={handleUpload} className="space-y-4">
-            <div className="border border-dashed border-zinc-700/60 hover:border-zinc-500 rounded-lg p-8 text-center transition-colors relative flex items-center justify-center bg-[#0e1013]">
+            <label className="border-2 border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center bg-[#0d0e12] group">
               <input
                 type="file"
                 onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="hidden"
               />
-              <div className="flex items-center space-x-3 pointer-events-none">
-                <span className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded text-xs font-medium border border-zinc-700">
-                  Browse...
-                </span>
-                <span className="text-xs text-zinc-400 truncate max-w-[200px]">
-                  {file ? file.name : 'No file chosen'}
-                </span>
-              </div>
-            </div>
+              <span className="bg-zinc-800 group-hover:bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-xs font-semibold border border-zinc-700 transition-colors mb-2">
+                Choose File
+              </span>
+              <span className="text-xs text-zinc-400 truncate max-w-[280px]">
+                {file ? file.name : 'Click to select a file from your device'}
+              </span>
+            </label>
 
             {file && (
               <button
                 type="submit"
                 disabled={uploading}
-                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-800 text-white text-xs font-semibold rounded transition-colors"
+                className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-zinc-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-950/50"
               >
-                {uploading ? 'Uploading file...' : 'Upload File'}
+                {uploading ? 'Uploading file...' : 'Upload File to Vault'}
               </button>
             )}
           </form>
 
-          {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-3 text-xs text-red-400 text-center">{error}</p>}
         </div>
 
         {/* Shared Files List */}
-        <div className="bg-[#121418] border border-zinc-800/80 rounded-xl p-6 shadow-2xl">
-          <h2 className="text-base font-semibold text-white mb-4">Shared Files</h2>
+        <div className="bg-[#111318] border border-zinc-800/80 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Shared Files</h2>
+            <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
+              {files.length} {files.length === 1 ? 'file' : 'files'}
+            </span>
+          </div>
 
           {files.length === 0 ? (
-            <p className="text-xs text-zinc-500">No files currently uploaded.</p>
+            <div className="py-8 text-center text-xs text-zinc-500 border border-zinc-800/50 rounded-xl bg-[#0d0e12]">
+              No files currently uploaded.
+            </div>
           ) : (
-            <ul className="divide-y divide-zinc-800/50">
+            <ul className="space-y-2">
               {files.map((f) => (
-                <li key={f.url} className="py-3 flex items-center justify-between gap-4">
+                <li
+                  key={f.url}
+                  className="p-3 bg-[#0d0e12] border border-zinc-800/60 rounded-xl flex items-center justify-between gap-3 hover:border-zinc-700 transition-all"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-zinc-200 truncate">{f.pathname}</p>
-                    <p className="text-[10px] text-zinc-500">{formatSize(f.size)}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">{formatSize(f.size)}</p>
                   </div>
-                  <a
-                    href={f.downloadUrl || f.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
-                    className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-medium rounded border border-cyan-500/30 transition-colors shrink-0"
-                  >
-                    Download
-                  </a>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={f.downloadUrl || f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-medium rounded-lg border border-cyan-500/30 transition-colors"
+                    >
+                      Download
+                    </a>
+
+                    <button
+                      onClick={() => handleDelete(f.url)}
+                      disabled={deletingUrl === f.url}
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium rounded-lg border border-red-500/30 transition-colors disabled:opacity-50"
+                    >
+                      {deletingUrl === f.url ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
