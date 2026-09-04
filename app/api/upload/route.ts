@@ -14,8 +14,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           tokenPayload: JSON.stringify({}),
         };
       },
-      onUploadCompleted: async ({ blob }) => {
-        console.log('Upload finished:', blob.url);
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // Optional: Run logic when upload finishes
       },
     });
 
