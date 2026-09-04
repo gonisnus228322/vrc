@@ -1,20 +1,19 @@
-import type { Metadata } from 'next';
 import './globals.css';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Quick Vault',
-  description: 'Simple temporary file transfer',
+  description: 'Self-destructing temporary file vault',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body>
-        <div className="container">{children}</div>
+    <html lang="en" className="dark">
+      <body className="bg-black text-zinc-100 antialiased selection:bg-cyan-500 selection:text-black">
+        {children}
       </body>
     </html>
   );
