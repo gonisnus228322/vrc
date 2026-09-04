@@ -207,7 +207,7 @@ export default function Home() {
               {file ? file.name : 'Click to select or drop a file'}
             </span>
             <span className="file-hint">
-              {file ? formatSize(file.size) : 'Supports files up to 5 GB'}
+              {file ? formatSize(file.size) : 'Supports files up to 100PT (joke)'}
             </span>
           </label>
 
