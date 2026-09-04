@@ -1,6 +1,5 @@
 'use client';
 
-import { upload } from '@vercel/blob/client';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
@@ -30,10 +29,19 @@ export default function Home() {
 
     setUploading(true);
     try {
-      await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
       await fetchFiles();
     } catch (err) {
       alert('Upload failed: ' + (err as Error).message);
@@ -49,7 +57,7 @@ export default function Home() {
           Quick Vault
         </h1>
         <p style={{ color: '#8b949e', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-          Temporary file sharing up to 1 GB. Files automatically clear after 30 hours.
+          Temporary file sharing. Files automatically clear after 30 hours.
         </p>
 
         <div className="upload-area">
