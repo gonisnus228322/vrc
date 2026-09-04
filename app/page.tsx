@@ -37,9 +37,16 @@ export default function Home() {
         body: formData,
       });
 
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Server returned non-JSON response (${res.status})`);
+      }
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Upload failed');
+        throw new Error(data.error || `Upload failed with status ${res.status}`);
       }
 
       await fetchFiles();
