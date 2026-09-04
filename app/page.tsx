@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { upload } from '@vercel/blob/client';
 
 interface BlobFile {
   url: string;
@@ -14,6 +13,7 @@ interface BlobFile {
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,90 @@ export default function Home() {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
+      setProgress(0);
     }
+  };
+
+  const uploadFileWithProgress = (fileToUpload: File): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const tokenRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'blob.generate-client-token',
+            payload: {
+              pathname: fileToUpload.name,
+              callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/api/upload` : '/api/upload',
+              clientPayload: null,
+              multipart: false,
+            },
+          }),
+        });
+
+        if (!tokenRes.ok) {
+          const errData = await tokenRes.json().catch(() => ({}));
+          throw new Error(errData.error || errData.message || 'Failed to authorize upload token');
+        }
+
+        const { clientToken } = await tokenRes.json();
+
+        const xhr = new XMLHttpRequest();
+        const uploadUrl = `https://blob.vercel-storage.com/${encodeURIComponent(fileToUpload.name)}`;
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && e.total > 0) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            setProgress(pct);
+          }
+        });
+
+        xhr.addEventListener('load', async () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              let blobResult;
+              try {
+                blobResult = JSON.parse(xhr.responseText);
+              } catch {
+                blobResult = null;
+              }
+
+              if (blobResult) {
+                await fetch('/api/upload', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    type: 'blob.upload-completed',
+                    payload: {
+                      blob: blobResult,
+                      tokenPayload: null,
+                    },
+                  }),
+                });
+              }
+            } catch (e) {
+              console.warn('Completion notification failed:', e);
+            }
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status code ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Network error during file upload')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload was aborted')));
+
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${clientToken}`);
+        xhr.setRequestHeader('x-api-version', '7');
+        if (fileToUpload.type) {
+          xhr.setRequestHeader('Content-Type', fileToUpload.type);
+        }
+        xhr.send(fileToUpload);
+      } catch (err) {
+        reject(err);
+      }
+    });
   };
 
   const handleUpload = async (e: FormEvent) => {
@@ -45,15 +128,13 @@ export default function Home() {
     if (!file) return;
 
     setUploading(true);
+    setProgress(0);
     setError(null);
 
     try {
-      await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-      });
-
+      await uploadFileWithProgress(file);
       setFile(null);
+      setProgress(100);
       await fetchFiles();
     } catch (err) {
       const msg = (err as Error).message || 'Upload failed';
@@ -102,7 +183,6 @@ export default function Home() {
             <span className="status-dot" />
             <h1 className="vault-title">Quick Vault</h1>
           </div>
-          <span className="badge">OLED Dark</span>
         </div>
 
         <p className="vault-subtitle">
@@ -133,16 +213,22 @@ export default function Home() {
 
           {uploading && (
             <div className="loading-container">
-              <span className="loading-text">Vaulting file to storage...</span>
+              <div className="loading-label">
+                <span className="loading-text">Vaulting file to storage...</span>
+                <span className="loading-percentage">{progress}%</span>
+              </div>
               <div className="loading-bar">
-                <div className="loading-progress" />
+                <div
+                  className="loading-progress"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           )}
 
           {file && (
             <button type="submit" disabled={uploading} className="btn-upload">
-              {uploading ? 'Uploading...' : 'Upload File to Vault'}
+              {uploading ? `Uploading (${progress}%)...` : 'Upload File to Vault'}
             </button>
           )}
         </form>
