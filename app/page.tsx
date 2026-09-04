@@ -4,15 +4,25 @@ import { upload } from '@vercel/blob/client';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
-  const [fileList, setFileList] = useState<any[]>([]);
+  const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch active files from Vercel Blob
   const fetchFiles = async () => {
-    const res = await fetch('/api/cleanup');
-    const data = await res.json();
-    // Re-list active blobs by calling Vercel Blob SDK or an API route
+    try {
+      const res = await fetch('/api/files');
+      const data = await res.json();
+      if (data.files) setFiles(data.files);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
@@ -24,8 +34,7 @@ export default function Home() {
         access: 'public',
         handleUploadUrl: '/api/upload',
       });
-      alert('File uploaded! It will automatically expire in 30 hours.');
-      window.location.reload();
+      await fetchFiles();
     } catch (err) {
       alert('Upload failed: ' + (err as Error).message);
     } finally {
@@ -34,13 +43,50 @@ export default function Home() {
   };
 
   return (
-    <main style={{ maxWidth: '600px', margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h1>Temporary File Hub</h1>
-      <p>Files uploaded here self-destruct after 30 hours.</p>
+    <main>
+      <div className="card">
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#f0f6fc' }}>
+          Dark File Hub
+        </h1>
+        <p style={{ color: '#8b949e', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+          Upload files up to 1 GB. All uploads auto-delete after 30 hours.
+        </p>
 
-      <div style={{ margin: '20px 0', padding: '20px', border: '2px dashed #ccc' }}>
-        <input type="file" onChange={handleUpload} disabled={uploading} />
-        {uploading && <p>Uploading... Please wait.</p>}
+        <div className="upload-area">
+          <input
+            type="file"
+            onChange={handleUpload}
+            disabled={uploading}
+            style={{ color: '#c9d1d9' }}
+          />
+          {uploading && <p style={{ marginTop: '0.5rem', color: '#58a6ff' }}>Uploading file...</p>}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#f0f6fc' }}>
+          Uploaded Files
+        </h2>
+
+        {loading ? (
+          <p style={{ color: '#8b949e' }}>Loading files...</p>
+        ) : files.length === 0 ? (
+          <p style={{ color: '#8b949e' }}>No files active right now.</p>
+        ) : (
+          files.map((file, idx) => (
+            <div key={idx} className="file-item">
+              <div>
+                <p style={{ color: '#f0f6fc', fontWeight: 500 }}>{file.pathname}</p>
+                <span style={{ color: '#8b949e', fontSize: '0.8rem' }}>
+                  {file.size} • Expires in {file.hoursLeft}h
+                </span>
+              </div>
+              <a href={file.url} download className="btn">
+                Download
+              </a>
+            </div>
+          ))
+        )}
       </div>
     </main>
   );
