@@ -14,6 +14,7 @@ interface BlobFile {
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [files, setFiles] = useState<BlobFile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function Home() {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
+      setProgress(0);
     }
   };
 
@@ -45,15 +47,20 @@ export default function Home() {
     if (!file) return;
 
     setUploading(true);
+    setProgress(0);
     setError(null);
 
     try {
       await upload(file.name, file, {
         access: 'public',
         handleUploadUrl: '/api/upload',
+        onUploadProgress: (progressEvent) => {
+          setProgress(Math.round(progressEvent.percentage));
+        },
       });
 
       setFile(null);
+      setProgress(0);
       await fetchFiles();
     } catch (err) {
       const msg = (err as Error).message || 'Upload failed';
@@ -94,112 +101,95 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-zinc-100 p-4 sm:p-10 flex flex-col items-center justify-center font-sans antialiased">
-      <div className="w-full max-w-xl space-y-6">
-        
-        {/* Header / Upload Card */}
-        <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-[0_0_50px_-12px_rgba(0,255,255,0.08)]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2.5">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
-              </span>
-              <h1 className="text-xl font-bold text-white tracking-tight">Quick Vault</h1>
-            </div>
-            <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-400">
-              OLED Dark
-            </span>
+    <main className="vault-container">
+      {/* Upload Box */}
+      <div className="vault-card">
+        <div className="vault-header">
+          <div className="title-group">
+            <span className="status-dot" />
+            <h1 className="vault-title">Quick Vault</h1>
           </div>
+          <span className="badge">OLED Dark</span>
+        </div>
 
-          <p className="text-xs text-zinc-400 mb-6">
-            Temporary file vault. Direct CDN storage with 30-hour retention.
-          </p>
+        <p className="vault-subtitle">
+          Temporary file sharing. Files automatically clear after 30 hours.
+        </p>
 
-          <form onSubmit={handleUpload} className="space-y-4">
-            <label className="border-2 border-dashed border-zinc-800 hover:border-cyan-500/50 rounded-xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center bg-black group relative overflow-hidden">
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <div className="w-10 h-10 rounded-full bg-zinc-900 group-hover:bg-cyan-950/40 text-zinc-400 group-hover:text-cyan-400 flex items-center justify-center mb-3 transition-colors border border-zinc-800 group-hover:border-cyan-500/30">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
+        <form onSubmit={handleUpload}>
+          <label className="dropzone">
+            <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
+            <span className="file-name">
+              {file ? file.name : 'Click or tap here to select a file'}
+            </span>
+            <span className="file-hint">
+              {file ? formatSize(file.size) : 'Supports files up to 5 GB'}
+            </span>
+          </label>
+
+          {uploading && (
+            <div className="progress-wrapper">
+              <div className="progress-info">
+                <span>Uploading...</span>
+                <span className="progress-val">{progress}%</span>
               </div>
-              <span className="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors mb-1">
-                {file ? file.name : 'Select or drop a file'}
-              </span>
-              <span className="text-[11px] text-zinc-500">
-                {file ? formatSize(file.size) : 'Supports files up to 5 GB'}
-              </span>
-            </label>
-
-            {file && (
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 active:scale-[0.99] disabled:bg-zinc-800 disabled:text-zinc-500 text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)]"
-              >
-                {uploading ? 'Vaulting File...' : 'Upload File'}
-              </button>
-            )}
-          </form>
-
-          {error && <p className="mt-3 text-xs text-red-400 text-center font-mono">{error}</p>}
-        </div>
-
-        {/* Shared Files Section */}
-        <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-6 shadow-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">Vault Contents</h2>
-            <span className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded-md font-mono">
-              {files.length} {files.length === 1 ? 'file' : 'files'}
-            </span>
-          </div>
-
-          {files.length === 0 ? (
-            <div className="py-10 text-center text-xs text-zinc-600 border border-zinc-900 rounded-xl bg-black font-mono">
-              Vault is currently empty.
+              <div className="progress-bg">
+                <div className="progress-fill" style={{ width: `${progress}%` }} />
+              </div>
             </div>
-          ) : (
-            <ul className="space-y-2.5">
-              {files.map((f) => (
-                <li
-                  key={f.url}
-                  className="p-3.5 bg-black border border-zinc-800/80 rounded-xl flex items-center justify-between gap-3 hover:border-zinc-700 transition-all"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-zinc-100 truncate">{f.pathname}</p>
-                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{formatSize(f.size)}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <a
-                      href={f.downloadUrl || f.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-cyan-400 hover:text-cyan-300 text-xs font-semibold rounded-lg border border-zinc-800 hover:border-cyan-500/40 transition-all"
-                    >
-                      Download
-                    </a>
-
-                    <button
-                      onClick={() => handleDelete(f.url)}
-                      disabled={deletingUrl === f.url}
-                      className="px-3 py-1.5 bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 text-xs font-semibold rounded-lg border border-zinc-800 hover:border-red-500/40 transition-all disabled:opacity-50"
-                    >
-                      {deletingUrl === f.url ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
           )}
+
+          {file && (
+            <button type="submit" disabled={uploading} className="btn-upload">
+              {uploading ? 'Vaulting File...' : 'Upload File to Vault'}
+            </button>
+          )}
+        </form>
+
+        {error && <p className="error-text">{error}</p>}
+      </div>
+
+      {/* Shared Files Section */}
+      <div className="vault-card">
+        <div className="vault-header">
+          <span className="badge">Shared Files</span>
+          <span className="badge">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
         </div>
 
+        {files.length === 0 ? (
+          <div className="empty-vault">Vault is currently empty.</div>
+        ) : (
+          <ul className="file-list">
+            {files.map((f) => (
+              <li key={f.url} className="file-item">
+                <div className="file-info">
+                  <div className="file-title">{f.pathname}</div>
+                  <div className="file-size">{formatSize(f.size)}</div>
+                </div>
+
+                <div className="file-actions">
+                  <a
+                    href={f.downloadUrl || f.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="btn-action btn-download"
+                  >
+                    Download
+                  </a>
+
+                  <button
+                    onClick={() => handleDelete(f.url)}
+                    disabled={deletingUrl === f.url}
+                    className="btn-action btn-delete"
+                  >
+                    {deletingUrl === f.url ? '...' : 'Delete'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </main>
   );
